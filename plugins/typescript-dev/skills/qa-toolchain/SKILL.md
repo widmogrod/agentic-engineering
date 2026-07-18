@@ -97,7 +97,10 @@ report differences.
 
 8. **Wire gates** (ask which): CI job running the chain in order, minimum.
    Every workspace member must have the scripts — a member without `lint` or
-   `type-check` is invisible to the chain, not passing it.
+   `type-check` is invisible to the chain, not passing it. If the project uses
+   the `clean-architecture` skill, wire `pnpm test:arch` (the vitest arch
+   project) as its own CI job too — an architecture check nobody runs
+   silently rots.
 
 9. **Tell the agent**: record the canonical commands in `CLAUDE.md`, including
    that `type-check` covers tests and that eslint covers tests.

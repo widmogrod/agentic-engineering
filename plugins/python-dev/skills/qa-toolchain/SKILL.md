@@ -49,6 +49,8 @@ mention the difference instead of overwriting.
 
    [tool.mypy]
    strict = true
+   # Keeps over-broad error handlers honest (see the clean-architecture skill).
+   warn_unreachable = true
    # The vendored CRAP gate script is a tool, not project source.
    exclude = ["^scripts/"]
 

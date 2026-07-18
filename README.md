@@ -127,6 +127,8 @@ invoke them explicitly to read the conventions.
 | Skill | Governs |
 |---|---|
 | `python-dev:fastapi-service` | FastAPI service layout: flat package, `main.py` as sole composition root, per-endpoint `api/<ep>/{router,model,service}.py` packages, ports as `typing.Protocol`, all env access in `config.py` fail-fast |
+| `python-dev:clean-architecture` | Ports as `typing.Protocol`, sole composition root (`main.py`), in-memory adapters as production code proven by contract-test suites, errors-as-values (`Result`/`Ok`/`Err`) at port boundaries |
+| `typescript-dev:clean-architecture` | Hexagonal service modules (`domain/application/infrastructure`), dependency-direction rules with the `factory.ts` composition-root exception, three-tier DI, typed cross-service events — enforced by contract specs + `tsc` + tsarch architecture tests |
 | `python-dev:templates` | Internal registry used by `/dev:init` to locate the pack's templates (not user-facing) |
 | `typescript-dev:testing` | Vitest conventions: colocated `__test__/` dirs, filename-suffix routing to vitest projects, tests at full type strictness (no `any`/`@ts-expect-error` to make a test compile), typed mock factories that `satisfies` the real interface |
 

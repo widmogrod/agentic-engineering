@@ -18,6 +18,7 @@ reserved for installable libraries):
 ├── pyproject.toml
 ├── main.py              # THE composition root (see below)
 ├── config.py            # single source of truth for env (see below)
+├── contracts.py         # ports as typing.Protocol (see clean-architecture skill)
 ├── api/
 │   └── <endpoint>/      # one package per endpoint
 │       ├── router.py    # FastAPI router: HTTP concerns only
@@ -37,7 +38,8 @@ reserved for installable libraries):
    manager; dependencies are exposed via `app.state` getter functions (per-worker).
 2. **Ports are `typing.Protocol`.** Boundaries (storage, external APIs, clocks)
    are defined as Protocols; adapters implement them. Business code depends on the
-   Protocol, never the adapter.
+   Protocol, never the adapter. See the `clean-architecture` skill for the full
+   discipline (in-memory adapters, errors-as-values, contract tests).
 3. **HTTP files are role-named by location, not filename.** Inside
    `api/<endpoint>/` the files are always `router.py` / `model.py` / `service.py` —
    never `search_router.py`.

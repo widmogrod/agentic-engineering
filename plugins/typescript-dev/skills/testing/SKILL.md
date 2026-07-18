@@ -24,6 +24,10 @@ production code (see the `qa-toolchain` skill). Consequences:
 - Tests are **colocated** in a `__test__/` directory (singular) next to the
   code under test — not in a parallel top-level tree. Snapshots go in
   `__test__/snapshots/`.
+- A `*.contract.ts` file exports a function wrapping a `describe` block (the
+  behavioural spec for a port); it matches no test glob, so it only runs when
+  an adapter's `*.test.ts` imports and invokes it with that adapter's factory.
+  One spec, one invocation per adapter — see the `clean-architecture` skill.
 - The filename suffix declares the test's kind and routes it to a vitest
   project:
 
@@ -31,9 +35,13 @@ production code (see the `qa-toolchain` skill). Consequences:
   |---|---|---|
   | `*.test.ts` | unit / component | default (every run) |
   | `*.property.test.ts` | property-based (fast-check) | default |
+  | `*.contract.ts` | shared port behavioural spec — NOT collected directly | (imported) |
   | `*.integration.test.ts` | real infrastructure | opt-in |
   | `*.end-to-end.test.ts` | full flows, long timeout | opt-in |
   | `architecture.test.ts` | dependency-rule checks | opt-in |
+
+  For what `architecture.test.ts` files enforce and how to wire the `arch`
+  project, see the `clean-architecture` skill.
 
 ## Vitest projects: split by environment and cost
 
@@ -48,11 +56,13 @@ it will silently rot.
 ## Style
 
 - `describe` per unit under test; test names are behavior sentences
-  ("returns Err(NotFound) when the pool id is unknown"), not method names.
+  ("rejects with NotFoundError when the pool id is unknown"), not method
+  names.
 - One behavior per test; shared setup in typed builder functions, not
   `beforeEach` mutation chains.
-- Assert on values and closed unions, not on internal calls, wherever the
-  design allows — mock at the boundary (ports), not inside the domain.
+- Assert on returned values and thrown typed domain errors (discriminated by
+  class — see the `clean-architecture` skill), not on internal calls — mock at
+  the boundary (ports), not inside the domain.
 - Property-based tests (fast-check) for pure logic with meaningful input
   spaces; custom arbitraries live next to the mocks in `__test__/`.
 - Coverage comes from `vitest run --coverage` (v8 provider); it feeds
