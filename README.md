@@ -4,43 +4,139 @@ A collection of opinionated engineering practices, conventions, and patterns
 designed to increase confidence in AI agent outputs — distributed as a
 Claude Code plugin marketplace.
 
+The idea: agents produce trustworthy code when explicit best practices, gates,
+and workflows are installed alongside them — instead of improvised per session.
+Conventions are mined from production codebases ([docs/reference/](docs/reference/README.md)),
+distilled into installable skills, and enforced through mechanical quality gates.
+
 ## Install
 
 ```
 /plugin marketplace add widmogrod/agentic-engineering
 /plugin install python-dev@agentic-engineering
+/reload-plugins
 ```
 
 Installing a knowledge pack (like `python-dev`) pulls in the `dev` workflow
 plugin as a dependency.
 
-## Use
+## Plugins
+
+| Plugin | Role | Status |
+|---|---|---|
+| [`dev`](plugins/dev/) | Language-agnostic workflow engine: `/dev:*` commands, knowledge-doc format, (planned) gated subagent execution | skeleton |
+| [`python-dev`](plugins/python-dev/) | Python knowledge pack (uv): service conventions, QA toolchain with CRAP gate, project templates | usable |
+| `typescript-dev` | TypeScript knowledge pack (pnpm): planned | — |
+
+## Commands
+
+### `/dev:init <ecosystem> <archetype> [member=archetype ...]`
+
+Scaffold an opinionated project in the current directory. Resolves the
+ecosystem's knowledge pack (`<ecosystem>-dev`), instantiates the archetype's
+template tree (never overwrites existing files), creates the
+`docs/{plan,concepts,entities,summaries}/` knowledge base, and binds the
+project to its governing skills via `CLAUDE.md`.
 
 ```
-/dev:init python fastapi        # scaffold an opinionated FastAPI service
-/dev:brainstorm                 # design at signature altitude        (planned)
-/dev:plan                       # crystallize into docs/plan/          (planned)
-/dev:implement <plan.md>        # gated, subagent-driven execution     (planned)
+/dev:init python fastapi                # standalone FastAPI service
+/dev:init python workspace api=fastapi  # workspace topology (planned)
 ```
 
-## What's inside
+For **existing** projects, don't scaffold — use a knowledge pack's setup skill
+directly (see `/python-dev:qa-toolchain` below).
 
-| Plugin | Role |
+### `/python-dev:qa-toolchain [setup|run]`
+
+Set up or run the opinionated Python QA chain in a uv project:
+
+```
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy .
+uv run pytest                      # writes coverage.json
+uv run python scripts/crap.py      # CRAP gate: cc² × (1−cov)³ + cc
+```
+
+- **setup** retrofits an existing project: adds dev deps (`ruff mypy pytest
+  pytest-cov radon`), copies the bundled `crap.py` gate script, merges config
+  into `pyproject.toml` without clobbering yours, and calibrates thresholds
+  against the project's current state (coverage floor = current coverage,
+  ratcheted up over time) instead of imposing punishing defaults.
+- **run** executes the chain in order (order matters: CRAP reads the coverage
+  pytest writes) and guides fixing offenders — add tests or reduce complexity,
+  never silently raise thresholds.
+
+The CRAP gate flags a function only when **both** `cc > min-complexity` (5) and
+`crap > threshold` (30) hold; configured via `[tool.crap]` in `pyproject.toml`.
+
+### Planned commands
+
+| Command | Purpose |
 |---|---|
-| `dev` | Language-agnostic workflow engine: `/dev:*` commands, subagents, knowledge-doc format |
-| `python-dev` | Python knowledge pack (uv): FastAPI service conventions, testing, QA toolchain, templates |
+| `/dev:brainstorm` | Design at signature altitude — method signatures, data flow, state machines; no implementation bodies |
+| `/dev:plan` | Crystallize a brainstorm into `docs/plan/YYYY-MM-DD-<feature>-plan.md` — the contract and ledger `/dev:implement` consumes |
+| `/dev:implement <plan.md>` | Gated subagent loop per vertical slice: implement → adversarial review → mechanical QA gate → update ledger |
+| `/dev:add <ecosystem> <archetype> <name>` | Grow an existing workspace with a new member |
 
-Design: [docs/plan/2026-07-10-conceptual-outline.md](docs/plan/2026-07-10-conceptual-outline.md).
-Mined conventions backing the packs: [docs/reference/](docs/reference/README.md).
+## Knowledge skills (auto-triggered)
+
+These load automatically when the agent works on matching code; you can also
+invoke them explicitly to read the conventions.
+
+| Skill | Governs |
+|---|---|
+| `python-dev:fastapi-service` | FastAPI service layout: flat package, `main.py` as sole composition root, per-endpoint `api/<ep>/{router,model,service}.py` packages, ports as `typing.Protocol`, all env access in `config.py` fail-fast |
+| `python-dev:templates` | Internal registry used by `/dev:init` to locate the pack's templates (not user-facing) |
+
+## Templates
+
+| Archetype | Ecosystem | Description |
+|---|---|---|
+| `fastapi` | python | FastAPI service following the service-layout conventions; ships green — the instantiated tree passes `ruff check`, `ruff format`, `mypy --strict`, and its test suite |
+
+Each template carries an `archetype.json` manifest (kind, standalone,
+defaultDir, governing skills, variables) — the composition contract that lets
+`/dev:init` stay generic and archetypes compose into workspaces.
+
+## Design & research
+
+- [Conceptual outline](docs/plan/2026-07-10-conceptual-outline.md) — the
+  three-layer architecture (workflow engine / knowledge packs / project
+  instance), archetype composition model, command designs.
+- [Reference catalog](docs/reference/README.md) — 34 convention docs mined from
+  production codebases: quality gates, Python conventions, clean architecture,
+  workspace layouts, Docker, cross-language contracts. The raw material skills
+  are distilled from.
 
 ## Development
-
-Validate the marketplace and all plugins:
 
 ```
 claude plugin validate .
 ```
 
-Plugins intentionally carry no `version` yet — while under active development they
-are versioned by commit SHA, so installs update on every push. Semver comes with
-the first stable release (`--strict` validation will pass from then on).
+Test the full pipeline locally without pushing:
+
+```
+claude plugin marketplace add /path/to/agentic-engineering
+claude plugin install python-dev@agentic-engineering --scope local
+# after committing changes:
+claude plugin update python-dev@agentic-engineering --scope local
+```
+
+Repository layout:
+
+```
+.claude-plugin/marketplace.json    # the marketplace manifest
+plugins/<plugin>/
+├── .claude-plugin/plugin.json     # plugin manifest (only file in .claude-plugin/)
+├── skills/<name>/SKILL.md         # skills (+ scripts/, references/ per skill)
+└── templates/<archetype>/         # archetype.json + tree/ (knowledge packs only)
+docs/plan/                         # design docs (temporal)
+docs/reference/                    # mined conventions (timeless, evidence-cited)
+```
+
+Plugins intentionally carry no `version` yet — while under active development
+they are versioned by commit SHA, so installs update on every push. Semver
+comes with the first stable release (`--strict` validation will pass from then
+on). CI runs `claude plugin validate .` on every push and PR.
