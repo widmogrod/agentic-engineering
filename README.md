@@ -24,7 +24,7 @@ plugin as a dependency.
 
 | Plugin | Role | Status |
 |---|---|---|
-| [`dev`](plugins/dev/) | Language-agnostic workflow engine: `/dev:*` commands, knowledge-doc format, (planned) gated subagent execution | skeleton |
+| [`dev`](plugins/dev/) | Language-agnostic workflow engine: `/dev:*` commands, knowledge-doc format, (planned) gated subagent execution | usable |
 | [`python-dev`](plugins/python-dev/) | Python knowledge pack (uv): service conventions, QA toolchain with CRAP gate, project templates | usable |
 | `typescript-dev` | TypeScript knowledge pack (pnpm): planned | — |
 
@@ -45,6 +45,29 @@ project to its governing skills via `CLAUDE.md`.
 
 For **existing** projects, don't scaffold — use a knowledge pack's setup skill
 directly (see `/python-dev:qa-toolchain` below).
+
+### `/dev:brainstorm [topic]`
+
+Structured design conversation at **signature altitude**: method signatures,
+data flow, state machines, invariants — never implementation bodies. Grounds
+itself in `docs/concepts/` and `docs/entities/` (prior decisions bind),
+proposes 2-3 approaches with trade-offs, iterates, and converges on a design
+summary. The notation discipline (arrow data-flow, state tables, error
+channels as part of the contract) ships as a bundled reference. Ends by
+offering `/dev:plan` — never by implementing.
+
+### `/dev:plan [feature-name]`
+
+Crystallizes the agreed design into `docs/plan/YYYY-MM-DD-<feature>-plan.md` —
+the **contract and ledger** `/dev:implement` will execute. Decomposes the work
+into 2-6 vertical slices (each cuts through all layers and ends in something
+observable; riskiest first), configures the gates and human pause points in
+frontmatter, and stubs new concepts/entities into the knowledge base with
+`[[wiki-links]]`. The plan stays `draft` until the user approves it.
+
+The knowledge format itself (`docs/{plan,concepts,entities,summaries}/`,
+frontmatter, wiki-links, append-only ledger rules) is defined in a shared
+Claude-only skill (`dev:knowledge`) that all commands consult.
 
 ### `/python-dev:qa-toolchain [setup|run]`
 
@@ -74,8 +97,6 @@ The CRAP gate flags a function only when **both** `cc > min-complexity` (5) and
 
 | Command | Purpose |
 |---|---|
-| `/dev:brainstorm` | Design at signature altitude — method signatures, data flow, state machines; no implementation bodies |
-| `/dev:plan` | Crystallize a brainstorm into `docs/plan/YYYY-MM-DD-<feature>-plan.md` — the contract and ledger `/dev:implement` consumes |
 | `/dev:implement <plan.md>` | Gated subagent loop per vertical slice: implement → adversarial review → mechanical QA gate → update ledger |
 | `/dev:add <ecosystem> <archetype> <name>` | Grow an existing workspace with a new member |
 
