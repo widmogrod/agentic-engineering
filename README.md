@@ -69,6 +69,29 @@ The knowledge format itself (`docs/{plan,concepts,entities,summaries}/`,
 frontmatter, wiki-links, append-only ledger rules) is defined in a shared
 Claude-only skill (`dev:knowledge`) that all commands consult.
 
+### `/dev:implement <path/to/plan.md>`
+
+Executes an approved plan slice by slice through three gated subagents, with
+the plan file as the single source of truth:
+
+```
+for each slice:
+  slice-implementer   # domain/ports -> tests -> implementation -> wiring
+  critic-reviewer     # adversarial, READ-ONLY: tries to refute spec/design/
+                      #   convention compliance + test honesty (max 2 revision rounds)
+  qa-gate             # runs the pack's mechanical chain verbatim; PASS/FAIL,
+                      #   no fixing, no interpreting, no relaxing (max 2 retries)
+  ledger              # append row: divergence, tech debt, human-review flag
+  commit              # one commit per slice, plan update included
+  pause?              # stops at plan-declared pause_after checkpoints
+```
+
+Gates exhausted → the loop STOPS with a `blocked` ledger row and verbatim
+failures — it never lowers the bar to keep moving. Resume is built in: rerun
+on an `in-progress` plan and it continues from the first unfinished slice.
+On completion it fills the plan Summary, distills `docs/summaries/<feature>.md`,
+and reports open tech debt as the backlog.
+
 ### `/python-dev:qa-toolchain [setup|run]`
 
 Set up or run the opinionated Python QA chain in a uv project:
@@ -116,7 +139,6 @@ gates against current reality, every workspace member must carry the scripts
 
 | Command | Purpose |
 |---|---|
-| `/dev:implement <plan.md>` | Gated subagent loop per vertical slice: implement → adversarial review → mechanical QA gate → update ledger |
 | `/dev:add <ecosystem> <archetype> <name>` | Grow an existing workspace with a new member |
 
 ## Knowledge skills (auto-triggered)
