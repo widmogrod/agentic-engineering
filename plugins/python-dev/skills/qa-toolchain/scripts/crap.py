@@ -81,9 +81,7 @@ def run_radon(targets: list[str]) -> dict:
     return json.loads(proc.stdout)
 
 
-def function_coverage(
-    executed: set[int], missing: set[int], lineno: int, endline: int
-) -> float:
+def function_coverage(executed: set[int], missing: set[int], lineno: int, endline: int) -> float:
     span = range(lineno, endline + 1)
     covered = sum(1 for ln in span if ln in executed)
     uncovered = sum(1 for ln in span if ln in missing)
@@ -106,9 +104,7 @@ def collect_scores(radon_data: dict, coverage: dict) -> list[Score]:
                 name = f"{block['classname']}.{name}"
             comp = block["complexity"]
             cov = function_coverage(executed, missing, block["lineno"], block["endline"])
-            scores.append(
-                Score(posix, block["lineno"], name, comp, cov, crap_score(comp, cov))
-            )
+            scores.append(Score(posix, block["lineno"], name, comp, cov, crap_score(comp, cov)))
     return scores
 
 
@@ -118,9 +114,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--threshold", type=float, default=None)
     parser.add_argument("--min-complexity", type=int, default=None)
     parser.add_argument("--coverage-json", type=Path, default=Path("coverage.json"))
-    parser.add_argument(
-        "--top", type=int, default=10, help="also show the N riskiest functions"
-    )
+    parser.add_argument("--top", type=int, default=10, help="also show the N riskiest functions")
     args = parser.parse_args(argv)
 
     threshold, min_complexity = load_config(Path("pyproject.toml"))
@@ -139,9 +133,7 @@ def main(argv: list[str] | None = None) -> int:
 
     scores = collect_scores(run_radon(args.targets), load_coverage(args.coverage_json))
     scores.sort(key=lambda s: s.crap, reverse=True)
-    offenders = [
-        s for s in scores if s.complexity > min_complexity and s.crap > threshold
-    ]
+    offenders = [s for s in scores if s.complexity > min_complexity and s.crap > threshold]
 
     if args.top and scores:
         print(f"Top {min(args.top, len(scores))} riskiest functions:")

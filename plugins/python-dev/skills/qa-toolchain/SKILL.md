@@ -44,9 +44,13 @@ mention the difference instead of overwriting.
 
    [tool.ruff.lint.per-file-ignores]
    "tests/**" = ["S101"]
+   # The vendored QA gate script legitimately shells out to `radon` by name.
+   "scripts/**" = ["S603", "S607"]
 
    [tool.mypy]
    strict = true
+   # The vendored CRAP gate script is a tool, not project source.
+   exclude = ["^scripts/"]
 
    [tool.pytest.ini_options]
    addopts = ["--cov=<package>", "--cov-report=term-missing", "--cov-report=json"]
