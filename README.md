@@ -26,7 +26,7 @@ plugin as a dependency.
 |---|---|---|
 | [`dev`](plugins/dev/) | Language-agnostic workflow engine: `/dev:*` commands, knowledge-doc format, (planned) gated subagent execution | usable |
 | [`python-dev`](plugins/python-dev/) | Python knowledge pack (uv): service conventions, QA toolchain with CRAP gate, project templates | usable |
-| `typescript-dev` | TypeScript knowledge pack (pnpm): planned | — |
+| [`typescript-dev`](plugins/typescript-dev/) | TypeScript knowledge pack (pnpm): type-checked tests with vitest, prettier formatting, QA chain | usable |
 
 ## Commands
 
@@ -93,6 +93,25 @@ uv run python scripts/crap.py      # CRAP gate: cc² × (1−cov)³ + cc
 The CRAP gate flags a function only when **both** `cc > min-complexity` (5) and
 `crap > threshold` (30) hold; configured via `[tool.crap]` in `pyproject.toml`.
 
+### `/typescript-dev:qa-toolchain [setup|run]`
+
+Set up or run the opinionated TypeScript QA chain in a pnpm project:
+
+```
+pnpm fmt:check      # prettier --check .   (defaults + organize-imports plugin)
+pnpm lint           # eslint .             (flat config, type-aware, tests included)
+pnpm type-check     # tsc -p tsconfig.dev.json --noEmit
+pnpm test           # vitest run --coverage
+```
+
+The load-bearing pattern is the **dual tsconfig**: `tsconfig.json` (emit,
+excludes tests) + `tsconfig.dev.json` (extends it, `noEmit`, re-includes
+`__test__/**` at the **same strict level**) — so tests are type-checked as
+real code. The dev config may only widen `include`, never loosen strictness.
+Same retrofit philosophy as the Python pack: merge-don't-clobber, calibrate
+gates against current reality, every workspace member must carry the scripts
+(a member without `type-check` isn't passing the chain — it's invisible to it).
+
 ### Planned commands
 
 | Command | Purpose |
@@ -109,6 +128,7 @@ invoke them explicitly to read the conventions.
 |---|---|
 | `python-dev:fastapi-service` | FastAPI service layout: flat package, `main.py` as sole composition root, per-endpoint `api/<ep>/{router,model,service}.py` packages, ports as `typing.Protocol`, all env access in `config.py` fail-fast |
 | `python-dev:templates` | Internal registry used by `/dev:init` to locate the pack's templates (not user-facing) |
+| `typescript-dev:testing` | Vitest conventions: colocated `__test__/` dirs, filename-suffix routing to vitest projects, tests at full type strictness (no `any`/`@ts-expect-error` to make a test compile), typed mock factories that `satisfies` the real interface |
 
 ## Templates
 

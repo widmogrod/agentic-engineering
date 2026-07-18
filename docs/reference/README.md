@@ -19,6 +19,13 @@ observed vs. inferred and plan vs. reality. All `status: draft` — pending revi
 - [mutation-testing.md](quality/mutation-testing.md) — the six-stage self-improving loop; honest built-vs-planned accounting
 - [mutation-testing-typescript.md](quality/mutation-testing-typescript.md) — Stryker/vitest concrete config (incremental cache)
 
+## typescript/ — TS conventions
+
+- [typescript/formatting-prettier.md](typescript/formatting-prettier.md) — prettier as one-plugin-only config (organize-imports), defaults everywhere, write-only `fmt`, no format gate, no eslint-config-prettier
+- [typescript/linting-eslint.md](typescript/linting-eslint.md) — ESLint 9 flat config; typescript-eslint `recommended` + strict unsafe-`any`; nogai's 16 custom rules + `no-restricted-syntax` Zod-v4 bans; two members unlinted
+- [typescript/type-checked-tests.md](typescript/type-checked-tests.md) — the load-bearing trick: `tsconfig.dev.json` re-includes `__test__/` and `tsc -p tsconfig.dev.json --noEmit` checks tests at full `strict`; no vitest `typecheck`/`expectTypeOf`
+- [typescript/testing-vitest.md](typescript/testing-vitest.md) — Vitest 4 multi-project split (node/jsdom/e2e/eval/arch), filename-suffix routing, `__test__/`+`snapshots/`, v8 coverage, and the canonical QA chain (typecheck → lint+knip → i18n → test)
+
 ## python/ — service conventions
 
 - [service-layout.md](python/service-layout.md) — flat package for deployables vs `src/` for libraries; `main.py` sole composition root; ports as `Protocol`; `api/<ep>/{router,model,service}.py`
