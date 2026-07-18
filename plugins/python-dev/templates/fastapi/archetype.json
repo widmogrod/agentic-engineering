@@ -1,0 +1,8 @@
+{
+  "name": "fastapi",
+  "kind": "member",
+  "standalone": true,
+  "defaultDir": "apps/{{name}}",
+  "skills": ["python-dev:fastapi-service"],
+  "vars": ["name"]
+}

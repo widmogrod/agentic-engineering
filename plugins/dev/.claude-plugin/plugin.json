@@ -1,0 +1,12 @@
+{
+  "name": "dev",
+  "displayName": "Dev Workflow",
+  "description": "Language-agnostic engineering workflow: init, brainstorm, plan, implement — with gated subagent execution.",
+  "author": {
+    "name": "widmogrod",
+    "email": "widmogrod@gmail.com"
+  },
+  "repository": "https://github.com/widmogrod/agentic-engineering",
+  "license": "MIT",
+  "keywords": ["workflow", "scaffolding", "planning", "quality-gates"]
+}

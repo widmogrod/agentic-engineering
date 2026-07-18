@@ -1,0 +1,21 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+      # No --strict: plugins intentionally omit `version` (commit-SHA versioning
+      # while under active development), which --strict flags as an error.
+      - name: Validate marketplace and plugins
+        run: claude plugin validate .

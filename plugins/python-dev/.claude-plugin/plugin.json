@@ -1,0 +1,13 @@
+{
+  "name": "python-dev",
+  "displayName": "Python Dev (uv)",
+  "description": "Opinionated Python knowledge pack: FastAPI service conventions, testing, QA toolchain, and uv-based project templates.",
+  "author": {
+    "name": "widmogrod",
+    "email": "widmogrod@gmail.com"
+  },
+  "repository": "https://github.com/widmogrod/agentic-engineering",
+  "license": "MIT",
+  "keywords": ["python", "uv", "fastapi", "conventions"],
+  "dependencies": ["dev"]
+}

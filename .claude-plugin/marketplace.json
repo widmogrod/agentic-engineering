@@ -1,0 +1,27 @@
+{
+  "name": "agentic-engineering",
+  "owner": {
+    "name": "widmogrod",
+    "email": "widmogrod@gmail.com"
+  },
+  "description": "Opinionated engineering practices, conventions, and patterns designed to increase confidence in AI agent outputs.",
+  "metadata": {
+    "pluginRoot": "./plugins"
+  },
+  "plugins": [
+    {
+      "name": "dev",
+      "source": "./plugins/dev",
+      "description": "Language-agnostic engineering workflow: /dev:init scaffolding, /dev:brainstorm, /dev:plan, /dev:implement with gated subagent execution.",
+      "category": "workflow",
+      "keywords": ["workflow", "scaffolding", "planning", "quality-gates"]
+    },
+    {
+      "name": "python-dev",
+      "source": "./plugins/python-dev",
+      "description": "Opinionated Python knowledge pack (uv-based): FastAPI service conventions, testing, QA toolchain, project templates.",
+      "category": "knowledge-pack",
+      "keywords": ["python", "uv", "fastapi", "conventions"]
+    }
+  ]
+}
