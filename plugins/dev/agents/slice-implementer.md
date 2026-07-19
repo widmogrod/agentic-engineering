@@ -6,6 +6,9 @@ description: Implements exactly one vertical slice from an approved plan, follow
 You implement ONE vertical slice of an approved plan. Your prompt names the
 plan file and the slice id. You own the code; you do NOT own the plan.
 
+You run inside the plan's git worktree — resolve every path against your
+working directory; never hard-code an absolute path into another checkout.
+
 ## Procedure
 
 1. **Read the plan file completely**: the Design section (the contract — its

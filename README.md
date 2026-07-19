@@ -72,7 +72,10 @@ Claude-only skill (`dev:knowledge`) that all commands consult.
 ### `/dev:implement <path/to/plan.md>`
 
 Executes an approved plan slice by slice through three gated subagents, with
-the plan file as the single source of truth:
+the plan file as the single source of truth — **in an isolated git worktree**
+branched from the branch the session started on (`plan/<feature>` under
+`.claude/worktrees/`), so parallel Claude Code instances implementing
+different plans in one repo never touch each other's trees:
 
 ```
 for each slice:
@@ -87,10 +90,14 @@ for each slice:
 ```
 
 Gates exhausted → the loop STOPS with a `blocked` ledger row and verbatim
-failures — it never lowers the bar to keep moving. Resume is built in: rerun
-on an `in-progress` plan and it continues from the first unfinished slice.
-On completion it fills the plan Summary, distills `docs/summaries/<feature>.md`,
-and reports open tech debt as the backlog.
+failures — it never lowers the bar to keep moving. Resume is built in: the
+deterministic branch/worktree names double as discovery and same-plan mutual
+exclusion, so rerunning continues from the first unfinished slice. On
+completion it fills the plan Summary, distills `docs/summaries/<feature>.md`,
+reports open tech debt as the backlog — then **asks before merging back**:
+rebase onto the base tip, re-run the full QA chain on the rebased tree,
+`merge --ff-only` (the base receives byte-identically the tree that was
+tested), clean up the worktree. Every non-success path keeps the worktree.
 
 ### `/python-dev:qa-toolchain [setup|run]`
 

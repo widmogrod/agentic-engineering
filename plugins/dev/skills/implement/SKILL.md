@@ -1,45 +1,78 @@
 ---
 name: implement
-description: Execute an approved plan slice by slice through gated subagents — implement, adversarially review, run mechanical QA, record the ledger, commit, pause for humans where the plan says so. Use when the user asks to implement a plan file created by /dev:plan.
+description: Execute an approved plan slice by slice through gated subagents in an isolated git worktree — implement, adversarially review, run mechanical QA, record the ledger, commit, pause for humans where the plan says so, and merge back only on the user's word. Use when the user asks to implement a plan file created by /dev:plan.
 argument-hint: "[path/to/plan.md]"
 ---
 
-# /dev:implement — gated execution of an approved plan
+# /dev:implement — gated execution of an approved plan, in its own worktree
 
 Plan file: `$ARGUMENTS`
 
 You are the ORCHESTRATOR. Subagents write code; you own the plan file, the
-ledger, the gates, and the commits. Consult the `knowledge` skill for docs/
-format rules.
+ledger, the gates, the worktree, and the commits. Consult the `knowledge`
+skill for docs/ format rules.
+
+Each invocation runs in its OWN git worktree branched from the branch this
+session started on — so parallel Claude Code instances implementing different
+plans in the same repo never touch each other's trees, and the base branch is
+never written during implementation.
 
 ## Preconditions
 
 1. Read the plan file completely. If `status: draft` → show the slice list and
-   ask the user to approve first; STOP. If `status: in-progress` → this is a
-   resume: slices already `done` in the ledger are finished; continue from the
-   first slice that isn't.
-2. `git status` must be clean (or contain only the plan file). Uncommitted
-   unrelated work → ask the user before proceeding.
-3. Set `status: in-progress` (if not already) and commit the plan file alone:
+   ask the user to approve first; STOP. 
+2. The plan file must be COMMITTED on the current branch (the worktree
+   branches from HEAD and needs it; committed plan changes are the audit
+   trail). If the approved plan is uncommitted, commit that one file alone:
+   `plan(<feature>): approve`.
+3. Capture `START_BRANCH` (current branch) and derive deterministic names
+   from the plan's `feature`: branch `plan/<feature>`, worktree
+   `.claude/worktrees/plan-<feature>`. These names ARE the coordination
+   mechanism — check `git worktree list`:
+   - Worktree exists → RESUME: `EnterWorktree path:<worktree>`; the worktree
+     copy of the plan is the truthful one; continue from the first slice not
+     `done` in its ledger. (Another live instance on the same plan will have
+     hit this too — if the user says someone else is driving it, refuse.)
+   - Branch exists but worktree pruned → re-attach:
+     `git worktree add <worktree> plan/<feature>` (no `-b`), then enter.
+   - Neither → fresh start (Step 0).
+
+## Step 0 — Establish the worktree
+
+1. `git worktree add -b plan/<feature> .claude/worktrees/plan-<feature> <START_BRANCH>`
+   then `EnterWorktree path:.claude/worktrees/plan-<feature>`. Do NOT use
+   `EnterWorktree name:` (its default baseRef is origin/<default>, not
+   START_BRANCH) and do NOT use per-agent `isolation: "worktree"` (each stage
+   would get a disjoint checkout).
+2. Provision the environment — a fresh worktree has no venv/node_modules/
+   hooks: run the project's install commands (`uv sync` / `pnpm install`, and
+   `pre-commit install` if the repo uses it), discovered from CLAUDE.md /
+   Makefile. This is a documented one-time cost per run.
+3. On the plan branch: set `status: in-progress`, record the binding in
+   frontmatter (`branch: plan/<feature>`, `worktree: <path>`,
+   `base_branch: <START_BRANCH>`), commit the plan file alone:
    `plan(<feature>): start implementation`.
 
 ## The loop — for each remaining slice, in plan order
 
-Run stages sequentially with the Agent tool (`run_in_background: false`).
-This plugin provides the agents: `slice-implementer`, `critic-reviewer`,
-`qa-gate` (they may appear namespaced, e.g. `dev:slice-implementer`).
+Run stages sequentially with the Agent tool (`run_in_background: false`),
+using this plugin's agents: `slice-implementer`, `critic-reviewer`, `qa-gate`
+(namespaced `dev:...`). All agents inherit your cwd — the worktree. Pass the
+plan path REPO-RELATIVE (`docs/plan/<file>.md`), never as an absolute path
+into another checkout: an absolute original-repo path would silently defeat
+the isolation.
 
 ### 1. Implement
 
-Spawn **slice-implementer** with: the plan path, the slice id, and nothing
-else — the agent reads plan + conventions itself. Keep its report.
+Spawn **slice-implementer** with: the repo-relative plan path and the slice
+id. Keep its report.
 
 ### 2. Adversarial review
 
 Spawn **critic-reviewer** with: plan path, slice id, and the implementer's
 report. On `verdict: revise`: send the blocking findings back to the SAME
 implementer (SendMessage) to fix, then re-review. Maximum 2 revision rounds;
-still `revise` after that → go to **Stopping** below.
+still `revise` after that → **Stopping**.
 
 If the implementer rebuts a finding's mechanism with evidence, have the
 re-review ADJUDICATE the dispute explicitly and record the outcome in the
@@ -50,8 +83,8 @@ disputes resolved silently recur.
 
 Spawn **qa-gate** (no context needed beyond "run the chain"). On FAIL: send
 the verbatim failures to the implementer to fix, then re-run the gate.
-Maximum 2 retry rounds; still FAIL → **Stopping**. Never proceed on a FAIL
-verdict, never relax a gate to convert FAIL to PASS.
+Maximum 2 retry rounds; still FAIL → **Stopping**. Never proceed on FAIL,
+never relax a gate.
 
 ### 4. Record — append to the plan, never rewrite
 
@@ -61,48 +94,65 @@ Add one ledger row:
 slice diverged from design, or the implementer flagged discoveries.)
 
 Longer entries go under **Decisions & divergences** (dated). New concepts or
-entities discovered → stub files in `docs/concepts|entities/` per the
-`knowledge` skill. Prior ledger rows and past decisions are immutable.
+entities → stub files per the `knowledge` skill. Prior rows are immutable.
 
 ### 5. Commit
 
-One commit per slice: implementation + tests + plan-file update together.
-Stage the slice's files EXPLICITLY (`git add <paths>`) — never `git add -A`:
-the working tree may hold unrelated changes from parallel sessions, and
-sweeping them into a slice commit corrupts both histories.
-Message: `feat(<feature>): S<n> <slice name>` with a body noting divergences
-and tech debt from the ledger row.
+One commit per slice on the plan branch: implementation + tests + plan-file
+update together. Stage the slice's files explicitly as hygiene (the worktree
+makes cross-session dirt impossible, but explicit staging keeps commits
+honest). Message: `feat(<feature>): S<n> <slice name>` with a body noting
+divergences and tech debt from the ledger row.
 
 ### 6. Pause points
 
-If the slice id is in `pause_after` → STOP after committing. Tell the user
-what was built, what the next slice is, and what to review; continue only
-when they say so.
+If the slice id is in `pause_after` → STOP after committing. The pause report
+LEADS with `worktree: <abs path> (branch plan/<feature>)` — the session is
+inside it, but the user's editor may still be on START_BRANCH — then what was
+built, the cumulative diff command (`git diff <START_BRANCH>..HEAD`), and
+what to review. Continue only when the user says so.
 
 ## Stopping (gate exhausted or blocked)
 
 Do NOT loop forever and do NOT lower the bar. Record a ledger row with status
-`blocked` and the reason, commit what is safely committable (never commit red
-tests silently — say so if you must leave the tree red), report to the user:
-what passed, the verbatim blocking findings/failures, your recommendation.
-Let the human decide.
+`blocked` and the reason, commit what is safely committable on the plan
+branch (never commit red tests silently — say so if the tree stays red),
+KEEP the worktree (resume needs it; nothing merges), and report: what passed,
+the verbatim blocking findings, your recommendation.
 
 ## Completion — all slices done
 
-1. Fill the plan's **Summary** section (what exists now, from the ledger);
-   set `status: done`.
-2. Distill `docs/summaries/<feature>.md` per the `knowledge` skill; update
-   concept/entity stubs that implementation refined.
-3. Final commit: `plan(<feature>): complete — summary + knowledge`.
-4. Report: slices done, total divergences, open tech debt (this is the
-   backlog), rows flagged `human review? yes`.
+1. On the plan branch: fill the plan's **Summary**, set `status: done`,
+   distill `docs/summaries/<feature>.md` per the `knowledge` skill, commit:
+   `plan(<feature>): complete — summary + knowledge`.
+2. **Ask the user**: implementation is green in the worktree — merge back to
+   `<START_BRANCH>`? Show the slice list, divergence count, open tech debt.
+
+### Merge-back (only on the user's yes)
+
+3. `git rebase <START_BRANCH>` — re-anchor onto the base tip (it may have
+   advanced, e.g. another instance's merged plan). Non-trivial conflicts →
+   STOP and hand to the user; a conflict is a design event.
+4. Re-run the FULL QA chain in the worktree on the rebased tip. FAIL → do not
+   merge; keep everything; report verbatim.
+5. `git switch <START_BRANCH>` then `git merge --ff-only plan/<feature>` —
+   linear slice commits land on the base, and the base's tree is byte-identical
+   to what step 4 tested (test exactly what you ship).
+6. Cleanup: `ExitWorktree action:keep` (returns the session to the original
+   checkout), `git worktree remove <worktree>`, `git branch -d plan/<feature>`.
+
+On "no": KEEP worktree + branch (completed green work is not yours to
+delete), report the path and how to inspect or merge later, offer removal
+explicitly.
 
 ## Rules
 
-- The plan file is yours ALONE — subagents never edit it (their definitions
-  say so too; treat a violation as a blocking review finding).
+- The plan file is yours ALONE — subagents never edit it.
 - Ledger is append-only. Divergences are recorded, not papered over.
-- One slice fully through the gates before the next starts. No parallel
-  slices — later slices read the ledger of earlier ones.
-- If the user interrupts mid-slice, finish recording (ledger row `blocked`
-  or `done`) before yielding — a resume must find the plan truthful.
+- One slice fully through the gates before the next starts.
+- The base branch is written exactly twice: the pre-flight `approve` commit
+  (if needed) and the final ff-merge. Everything else lives on `plan/<feature>`.
+- Every non-success path keeps the worktree — it is cheap to keep and
+  expensive to recreate mid-thought.
+- If the user interrupts mid-slice, finish recording (ledger row `blocked` or
+  `done`) before yielding — a resume must find the worktree copy truthful.
