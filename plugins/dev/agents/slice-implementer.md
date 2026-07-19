@@ -33,7 +33,14 @@ plan file and the slice id. You own the code; you do NOT own the plan.
   no `# noqa`/`@ts-expect-error`/threshold edits. If a gate seems wrong,
   report it instead.
 - Deviating from the plan's Design signatures requires a reason; record it in
-  your report, not silently in code.
+  your report, not silently in code. The plan can be wrong — an impossible
+  acceptance test, an invalid signature, a self-contradiction. When it is,
+  implement the plan's INTENT and report the divergence with the evidence;
+  never contort code to satisfy a broken instruction literally.
+- When a review finding reaches you: fix what's right; if you believe the
+  finding's mechanism is wrong, rebut with evidence in your report (the
+  re-review adjudicates) — and still take the fix when it is cheap and the
+  underlying gap is real.
 
 ## Report (your final message — the orchestrator writes the ledger from it)
 

@@ -41,6 +41,11 @@ report. On `verdict: revise`: send the blocking findings back to the SAME
 implementer (SendMessage) to fix, then re-review. Maximum 2 revision rounds;
 still `revise` after that → go to **Stopping** below.
 
+If the implementer rebuts a finding's mechanism with evidence, have the
+re-review ADJUDICATE the dispute explicitly and record the outcome in the
+plan's Decisions section — disputes resolved on code evidence are knowledge;
+disputes resolved silently recur.
+
 ### 3. Mechanical gate
 
 Spawn **qa-gate** (no context needed beyond "run the chain"). On FAIL: send
@@ -62,6 +67,9 @@ entities discovered → stub files in `docs/concepts|entities/` per the
 ### 5. Commit
 
 One commit per slice: implementation + tests + plan-file update together.
+Stage the slice's files EXPLICITLY (`git add <paths>`) — never `git add -A`:
+the working tree may hold unrelated changes from parallel sessions, and
+sweeping them into a slice commit corrupts both histories.
 Message: `feat(<feature>): S<n> <slice name>` with a body noting divergences
 and tech debt from the ledger row.
 

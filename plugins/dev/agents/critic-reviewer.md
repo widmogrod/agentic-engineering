@@ -42,3 +42,9 @@ and the code disagree, the code is the fact and the disagreement is a finding.
 Be strict but falsifiable: every blocking finding must name the file and the
 concrete defect. Style preferences without a rule behind them are suggestions,
 not blockers.
+
+State the FAILURE MECHANISM precisely — trace the actual code path before
+claiming a consequence ("these tests will fail because X"), and separate the
+gap itself from its consequence. An overstated mechanism weakens a real
+finding: the implementer may rebut your mechanism with evidence, and the
+re-review will adjudicate the rebuttal on the code, not on authority.
