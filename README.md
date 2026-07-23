@@ -63,7 +63,15 @@ the **contract and ledger** `/dev:implement` will execute. Decomposes the work
 into 2-6 vertical slices (each cuts through all layers and ends in something
 observable; riskiest first), configures the gates and human pause points in
 frontmatter, and stubs new concepts/entities into the knowledge base with
-`[[wiki-links]]`. The plan stays `draft` until the user approves it.
+`[[wiki-links]]`.
+
+Before hand-off, the **plan-critic** agent (read-only) adversarially reviews
+the plan on five fronts: acceptance-criteria *checkability* (verified against
+the real code — a criterion that can't work against the actual types is
+blocking), simplicity/YAGNI, conflicting requirements, **facts-not-opinions**
+(every factual claim verified in the repo; opinions allowed only as recorded
+decisions with rationale), and slice quality. The plan stays `draft` until
+the user approves it; approval commits the plan file.
 
 The knowledge format itself (`docs/{plan,concepts,entities,summaries}/`,
 frontmatter, wiki-links, append-only ledger rules) is defined in a shared

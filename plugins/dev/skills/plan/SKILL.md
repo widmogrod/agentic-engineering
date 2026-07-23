@@ -56,8 +56,26 @@ For each new concept or entity the design introduces, create a stub in
 `docs/concepts/` / `docs/entities/` (frontmatter + a paragraph + `[[links]]`
 to this plan). Add the reverse links to the plan's frontmatter.
 
-### 6. Hand off
+### 6. Adversarial plan review — before the user sees it
 
-Show the user the plan path and slice list. The plan stays `status: draft`
-until the user approves it — then set `status: approved` and point them at
-`/dev:implement <path>`. Never start implementing under this skill.
+Spawn the **plan-critic** agent (this plugin, `dev:plan-critic`) with the
+plan path. It attacks five fronts: acceptance-criteria checkability (verified
+against the real code), simplicity/YAGNI, conflicting requirements,
+facts-not-opinions (every factual claim verified in the repo), slice quality.
+
+- On `verdict: revise`: fix each blocking finding in the plan; if you believe
+  a finding's mechanism is wrong, rebut with evidence and have a re-review
+  adjudicate. Maximum 2 rounds; unresolved disputes go to the user with both
+  positions stated.
+- Record substantive critic-driven changes in the plan's Decisions section
+  (dated, "pre-approval review") — the review trail is part of the contract.
+- Suggestions that aren't taken: note why, don't silently drop.
+
+### 7. Hand off
+
+Show the user: the plan path, the slice list, and the critic's verdict with
+anything unresolved. The plan stays `status: draft` until the user approves
+it — then set `status: approved`, commit the plan file alone
+(`plan(<feature>): approve` — /dev:implement requires it committed), and
+point them at `/dev:implement <path>`. Never start implementing under this
+skill.
